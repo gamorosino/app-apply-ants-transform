@@ -1,0 +1,75 @@
+#!/bin/bash
+#PBS -l nodes=1:ppn=1,vmem=8g,walltime=0:05:00
+#PBS -N app-apply-ants-transform
+#PBS -V
+
+# === Load fields from config.json ===
+warp=$(jq -r .warp config.json)
+inverse_warp=$(jq -r .inverse_warp config.json)
+affine=$(jq -r .affine config.json)
+reference=$(jq -r .reference config.json)
+interpolation=$(jq -r .interpolation config.json)
+
+# Optional anatomical fields
+t1w=$(jq -r .t1 config.json)
+t2w=$(jq -r .t2 config.json)
+parc=$(jq -r .parc config.json)
+mask=$(jq -r .mask config.json)
+
+trks=./trks
+
+# === Assign first available anatomical image ===
+if [ -n "$t1w" ] && [ "$t1w" != "null" ]; then
+    anat=$t1w
+elif [ -n "$t2w" ] && [ "$t2w" != "null" ]; then
+    anat=$t2w
+elif [ -n "$parc" ] && [ "$parc" != "null" ]; then
+    anat=$parc
+elif [ -n "$mask" ] && [ "$mask" != "null" ]; then
+    anat=$mask
+else
+    echo "Error: No valid anatomical reference found in config.json" >&2
+    exit 1
+fi
+
+# If 'reference' not explicitly set, default to 'anat'
+if [ "$reference" == "null" ] || [ -z "$reference" ]; then
+    reference="$anat"
+fi
+
+# Set default interpolation if not specified
+[ "$interpolation" == "null" ] && interpolation="Linear"
+
+# === Validate required fields ===
+if [[ "$warp" == "null" ]]; then
+    echo "Error: 'warp' field is missing in config.json." >&2
+    exit 1
+fi
+
+# === Compose the transformation chain ===
+transforms=""
+if [[ "$inverse_warp" != "null" && "$inverse_warp" != "" ]]; then
+    transforms="$transforms -t [$affine,1] -t $inverse_warp"
+elif [[ "$affine" != "null" && "$affine" != "" ]]; then
+    transforms="$transforms -t $affine"
+fi
+transforms="$transforms -t $warp"
+
+# === Create output directory ===
+outdir=./ants_transformed
+mkdir -p "$outdir"
+
+# === Define output file name ===
+output_image=${outdir}/$(basename "${anat%.*}")_warped.nii.gz
+
+# === Run antsApplyTransforms ===
+echo "Applying transforms to $anat using reference $reference..."
+singularity exec -e docker://brainlife/ants:2.2.0-1bc antsApplyTransforms \
+    -d 3 \
+    -i "$anat" \
+    -r "$reference" \
+    $transforms \
+    -o "$output_image" \
+    -n "$interpolation"
+
+echo "Transformation complete. Output written to $output_image"
