@@ -9,6 +9,8 @@ inverse_warp=$(jq -r .inverse_warp config.json)
 affine=$(jq -r .affine config.json)
 reference=$(jq -r .reference config.json)
 interpolation=$(jq -r .interpolation config.json)
+inverse=$(jq -r .inverse config.json)
+affine_only=$(jq -r .affine_only config.json)
 
 # Optional anatomical fields
 t1w=$(jq -r .t1 config.json)
@@ -32,28 +34,42 @@ else
     exit 1
 fi
 
-# If 'reference' not explicitly set, default to 'anat'
+# === Default to 'anat' as reference if not specified ===
 if [ "$reference" == "null" ] || [ -z "$reference" ]; then
     reference="$anat"
 fi
 
-# Set default interpolation if not specified
+# Set default interpolation
 [ "$interpolation" == "null" ] && interpolation="Linear"
 
-# === Validate required fields ===
-if [[ "$warp" == "null" ]]; then
-    echo "Error: 'warp' field is missing in config.json." >&2
+# === Validate required transforms ===
+if [[ "$affine_only" != "true" && "$warp" == "null" && "$inverse_warp" == "null" ]]; then
+    echo "Error: No warp or inverse_warp provided, and affine_only is false." >&2
     exit 1
 fi
 
-# === Compose the transformation chain ===
+# === Build transformation chain based on logic ===
 transforms=""
-if [[ "$inverse_warp" != "null" && "$inverse_warp" != "" ]]; then
-    transforms="$transforms -t [$affine,1] -t $inverse_warp"
-elif [[ "$affine" != "null" && "$affine" != "" ]]; then
-    transforms="$transforms -t $affine"
+if [[ "$affine_only" == "true" ]]; then
+    if [[ "$affine" != "null" && "$affine" != "" ]]; then
+        transforms="-t $affine"
+    else
+        echo "Error: affine_only is true but affine transform not provided." >&2
+        exit 1
+    fi
+elif [[ "$inverse" == "true" ]]; then
+    if [[ "$inverse_warp" != "null" && "$inverse_warp" != "" && "$affine" != "null" && "$affine" != "" ]]; then
+        transforms="-t [$affine,1] -t $inverse_warp"
+    else
+        echo "Error: inverse is true but inverse_warp or affine missing." >&2
+        exit 1
+    fi
+else
+    if [[ "$affine" != "null" && "$affine" != "" ]]; then
+        transforms="-t $affine"
+    fi
+    transforms="$transforms -t $warp"
 fi
-transforms="$transforms -t $warp"
 
 # === Create output directory ===
 outdir=./ants_transformed
