@@ -56,7 +56,7 @@ Follow these steps to execute the script locally:
        "warp": "transforms/warp.nii.gz",
        "inverse_warp": "transforms/inverse_warp.nii.gz",
        "affine": "transforms/affine.mat",
-       "reference": null,
+       "reference": reference.nii.gz,
        "interpolation": "Linear",
        "t1": "anat/T1w.nii.gz",
        "t2": null,
@@ -79,10 +79,6 @@ Follow these steps to execute the script locally:
 #### Requirements
 - **Singularity** must be installed and available on your system.
 - **jq** is used for parsing the JSON configuration.
-- No need to manually install ANTs — the script uses:
-  ```bash
-  singularity exec -e docker://brainlife/ants:2.2.0-1bc antsApplyTransforms
-  ```
 
 ## Outputs
 
