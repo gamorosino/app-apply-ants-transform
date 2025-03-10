@@ -57,7 +57,7 @@ Follow these steps to execute the script locally:
        "warp": "transforms/warp.nii.gz",
        "inverse_warp": "transforms/inverse_warp.nii.gz",
        "affine": "transforms/affine.mat",
-       "reference": "template/T2w.nii.gz",
+       "input": "T1w.nii.gz",
        "interpolation": "Linear",
        "t1": "anat/T1w.nii.gz",
        "t2": null,
