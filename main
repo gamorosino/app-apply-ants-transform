@@ -1,13 +1,13 @@
 #!/bin/bash
 #PBS -l nodes=1:ppn=1,vmem=8g,walltime=0:05:00
-#PBS -N app-apply-ants-transform
+#PBS -N app-apply-transform
 #PBS -V
 
 # === Load fields from config.json ===
 warp=$(jq -r .warp config.json)
 inverse_warp=$(jq -r .inverse_warp config.json)
 affine=$(jq -r .affine config.json)
-reference=$(jq -r .reference config.json)
+input=$(jq -r .input config.json)
 interpolation=$(jq -r .interpolation config.json)
 inverse=$(jq -r .inverse config.json)
 affine_only=$(jq -r .affine_only config.json)
@@ -35,9 +35,9 @@ else
 fi
 
 # === Default to 'anat' as reference if not specified ===
-if [ "$reference" == "null" ] || [ -z "$reference" ]; then
-    reference="$anat"
-fi
+#if [ "$reference" == "null" ] || [ -z "$reference" ]; then
+#    reference="$anat"
+#fi
 
 # Set default interpolation
 [ "$interpolation" == "null" ] && interpolation="Linear"
@@ -82,8 +82,8 @@ output_image=${outdir}/$(basename "${anat%.*}")_warped.nii.gz
 echo "Applying transforms to $anat using reference $reference..."
 singularity exec -e docker://brainlife/ants:2.2.0-1bc antsApplyTransforms \
     -d 3 \
-    -i "$anat" \
-    -r "$reference" \
+    -i "$input" \
+    -r "$anat" \
     $transforms \
     -o "$output_image" \
     -n "$interpolation"
