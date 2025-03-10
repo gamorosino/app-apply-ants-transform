@@ -79,7 +79,7 @@ outdir=./ants_transformed
 mkdir -p "$outdir"
 
 # === Define output file name ===
-output_image=${outdir}/$(basename "${anat%.*}")_warped.nii.gz
+output_image=${outdir}/$(basename "${input%.*}")_warped.nii.gz
 
 # === Run antsApplyTransforms ===
 echo "Applying transforms to $anat using reference $reference..."
