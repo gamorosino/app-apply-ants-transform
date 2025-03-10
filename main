@@ -17,6 +17,7 @@ t1w=$(jq -r .t1 config.json)
 t2w=$(jq -r .t2 config.json)
 parc=$(jq -r .parc config.json)
 mask=$(jq -r .mask config.json)
+dwi=$(jq -r .dwi config.json)
 
 trks=./trks
 
@@ -29,6 +30,8 @@ elif [ -n "$parc" ] && [ "$parc" != "null" ]; then
     anat=$parc
 elif [ -n "$mask" ] && [ "$mask" != "null" ]; then
     anat=$mask
+elif [ -n "$dwi" ] && [ "$dwi" != "null" ]; then
+    anat=$dwi
 else
     echo "Error: No valid anatomical reference found in config.json" >&2
     exit 1
