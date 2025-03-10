@@ -1,13 +1,14 @@
 # app-apply-ants-transform
 
-This repository contains a script designed to apply nonlinear and affine spatial transformations to anatomical images using [ANTs (Advanced Normalization Tools)](http://stnava.github.io/ANTs/). The script wraps the `antsApplyTransforms` functionality and automates the selection of the appropriate input image and transformation chain.
+This repository contains a script designed to apply spatial transformations to anatomical images using [ANTs (Advanced Normalization Tools)](http://stnava.github.io/ANTs/). The script wraps the `antsApplyTransforms` functionality and automates the construction of the appropriate transformation chain.
 
 ## Features
 
 This app performs:
-- Application of nonlinear warps
-- Optional inclusion of affine and inverse transforms
-- Automatic selection of the first available anatomical image (T1w, T2w, parcellation, or mask)
+- Application of nonlinear warps or inverse warps
+- Optional use of affine-only transformations
+- T1w image as source ("anat") for transformation
+- Flexible reference image space (can be T1w, T2w, parcellation, or mask)
 - Interpolation options (Linear, NearestNeighbor, etc.)
 
 The transformed output image is exported in standard NIfTI format for downstream analyses.
@@ -50,18 +51,20 @@ Follow these steps to execute the script locally:
    cd app-apply-ants-transform
    ```
 
-2. Prepare a `config.json` file specifying all required input paths. Example:
+2. Prepare a `config.json` file specifying all required input paths and optional transformation logic. Example:
    ```json
    {
        "warp": "transforms/warp.nii.gz",
        "inverse_warp": "transforms/inverse_warp.nii.gz",
        "affine": "transforms/affine.mat",
-       "reference": reference.nii.gz,
+       "reference": "template/T2w.nii.gz",
        "interpolation": "Linear",
        "t1": "anat/T1w.nii.gz",
        "t2": null,
        "parc": null,
-       "mask": null
+       "mask": null,
+       "inverse": false,
+       "affine_only": false
    }
    ```
 
@@ -71,20 +74,25 @@ Follow these steps to execute the script locally:
    ```
 
    The script will:
-   - Select the first available anatomical image.
-   - Apply the specified spatial transforms.
-   - Run `antsApplyTransforms` via a Singularity container without requiring a local ANTs installation.
-   - Save the output to `ants_transformed/<anat>_warped.nii.gz`.
+   - Use T1w as the fixed source image (`anat`)
+   - Use the specified reference image for spatial mapping
+   - Apply affine-only, affine+warp, or affine+inverse-warp transforms depending on configuration
+   - Use `antsApplyTransforms` via a Singularity container without requiring a local ANTs installation
+   - Save the output to `ants_transformed/T1w_warped.nii.gz`
 
 #### Requirements
-- **Singularity** must be installed and available on your system.
-- **jq** is used for parsing the JSON configuration.
+- **Singularity** must be installed and available on your system
+- **jq** is used for parsing the JSON configuration
+- ANTs is run inside a container:
+  ```bash
+  singularity exec -e docker://brainlife/ants:2.2.0-1bc antsApplyTransforms
+  ```
 
 ## Outputs
 
 - **Transformed Image**: The output image is stored in:
   ```
-  ants_transformed/<anat>_warped.nii.gz
+  ants_transformed/T1w_warped.nii.gz
   ```
 
 ## Citation
