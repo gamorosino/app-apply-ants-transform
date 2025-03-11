@@ -1,16 +1,16 @@
 #!/bin/bash
-#PBS -l nodes=1:ppn=1,vmem=8g,walltime=0:05:00
+#PBS -l nodes=1:ppn=1,vmem=8g,walltime=0:10:00
 #PBS -N app-apply-transform
 #PBS -V
 
 # === Load fields from config.json ===
 warp=$(jq -r .warp config.json)
-inverse_warp=$(jq -r .inverse_warp config.json)
 affine=$(jq -r .affine config.json)
 input=$(jq -r .input config.json)
 interpolation=$(jq -r .interpolation config.json)
 inverse=$(jq -r .inverse config.json)
 affine_only=$(jq -r .affine_only config.json)
+fsl_transform=$(jq -r .fsl_transform config.json)
 
 # Optional anatomical fields
 t1w=$(jq -r .t1 config.json)
@@ -21,7 +21,7 @@ dwi=$(jq -r .dwi config.json)
 
 trks=./trks
 
-# === Assign first available anatomical image ===
+# === Assign first available anatomical reference ===
 if [ -n "$t1w" ] && [ "$t1w" != "null" ]; then
     anat=$t1w
 elif [ -n "$t2w" ] && [ "$t2w" != "null" ]; then
@@ -37,17 +37,25 @@ else
     exit 1
 fi
 
-# === Default to 'anat' as reference if not specified ===
-#if [ "$reference" == "null" ] || [ -z "$reference" ]; then
-#    reference="$anat"
-#fi
-
 # Set default interpolation
 [ "$interpolation" == "null" ] && interpolation="Linear"
 
+# === Convert FSL transforms to ANTs if requested ===
+if [[ "$fsl_transform" == "true" ]]; then
+    echo "Converting FLIRT affine to ITK..."
+    singularity exec -e docker://brainlife/connectome_workbench:1.5.0 wb_command -convert-affine -from-flirt $affine $input $anat -to-itk affine_ants_wb.txt
+    affine="affine_ants_wb.txt"
+
+    if [[ "$warp" != "null" && "$warp" != "" ]]; then
+        echo "Converting FNIRT warpfield to ITK..."
+        singularity exec -e docker://brainlife/connectome_workbench:1.5.0 wb_command -convert-warpfield -from-fnirt $warp $anat -to-itk warp_ants_wb.nii.gz
+        warp="warp_ants_wb.nii.gz"
+    fi
+fi
+
 # === Validate required transforms ===
-if [[ "$affine_only" != "true" && "$warp" == "null" && "$inverse_warp" == "null" ]]; then
-    echo "Error: No warp or inverse_warp provided, and affine_only is false." >&2
+if [[ "$affine_only" != "true" && ( "$warp" == "null" || "$warp" == "" ) ]]; then
+    echo "Error: No warp provided, and affine_only is false." >&2
     exit 1
 fi
 
@@ -60,16 +68,13 @@ if [[ "$affine_only" == "true" ]]; then
         echo "Error: affine_only is true but affine transform not provided." >&2
         exit 1
     fi
-elif [[ "$inverse" == "true" ]]; then
-    if [[ "$inverse_warp" != "null" && "$inverse_warp" != "" && "$affine" != "null" && "$affine" != "" ]]; then
-        transforms="-t [$affine,1] -t $inverse_warp"
-    else
-        echo "Error: inverse is true but inverse_warp or affine missing." >&2
-        exit 1
-    fi
 else
     if [[ "$affine" != "null" && "$affine" != "" ]]; then
-        transforms="-t $affine"
+        if [[ "$inverse" == "true" ]]; then
+            transforms="$transforms -t [$affine,1]"
+        else
+            transforms="$transforms -t [$affine,0]"
+        fi
     fi
     transforms="$transforms -t $warp"
 fi
@@ -82,7 +87,7 @@ mkdir -p "$outdir"
 output_image=${outdir}/t1.nii.gz
 
 # === Run antsApplyTransforms ===
-echo "Applying transforms to $anat using reference $reference..."
+echo "Applying transforms to $input using reference $anat..."
 singularity exec -e docker://brainlife/ants:2.2.0-1bc antsApplyTransforms \
     -d 3 \
     -i "$input" \
