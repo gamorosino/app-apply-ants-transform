@@ -57,7 +57,7 @@ fi
 
 if [[ "$fsl_transform" == "true" ]]; then
     echo "Converting FLIRT affine to ITK..."
-    singularity exec -e docker://brainlife/vnmd/itksnap_4.0.2:20240206 \
+    singularity exec -e docker://vnmd/itksnap_4.0.2:20240206 \
 	3d_affine_tool -ref $reference -src $source $affine -fsl2ras -oitk affine_ants_c3d.txt
     affine="affine_ants_c3d.txt"
 
