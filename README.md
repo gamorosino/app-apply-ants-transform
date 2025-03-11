@@ -23,6 +23,7 @@ Example:
 ```json
 {
     "warp": "transforms/warp.nii.gz",
+    "inverse-warp": "transforms/inverse_warp.nii.gz",
     "affine": "transforms/affine.txt",
     "input": "native/input_image.nii.gz",
     "interpolation": "Linear",
@@ -39,16 +40,17 @@ Example:
 
 ### Field Descriptions
 
-| Field           | Description                                                     |
-|----------------|------------------------------------------------------------------|
-| `warp`          | Path to nonlinear warp field                                    |
-| `affine`        | Affine matrix (FLIRT-style if `fsl_transform=true`)             |
-| `input`         | Image to transform                                              |
-| `interpolation` | Interpolation method (`Linear`, `NearestNeighbor`, etc.)       |
-| `inverse`       | If `true`, applies affine in inverse mode (`-t [affine,1]`)     |
-| `affine_only`   | If `true`, applies only affine and skips warps                  |
-| `fsl_transform` | If `true`, converts affine and warp to ANTs-compatible format   |
-| `t1`, `t2`, `parc`, `mask`, `dwi` | Reference image; first non-null used as target |
+| Field           | Description                                                                 |
+|----------------|-----------------------------------------------------------------------------|
+| `warp`          | Path to nonlinear warp field                                                |
+| `inverse-warp`  | Path to inverse warp field (used if `inverse=true`)                         |
+| `affine`        | Affine matrix (FLIRT-style if `fsl_transform=true`)                         |
+| `input`         | Image to transform                                                          |
+| `interpolation` | Interpolation method (`Linear`, `NearestNeighbor`, etc.)                   |
+| `inverse`       | If `true`, applies affine and warp in inverse mode  |
+| `affine_only`   | If `true`, applies only affine and skips warps                              |
+| `fsl_transform` | If `true`, converts affine and warp to ANTs-compatible format               |
+| `t1`, `t2`, `parc`, `mask`, `dwi` | Reference image; first non-null used as target image     |
 
 ## Usage
 
@@ -64,7 +66,7 @@ cd app-apply-ants-transform
 
 3. Run the script:
 ```bash
-./main
+./apply_transform_main_final.sh
 ```
 
 The script will:
