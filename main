@@ -3,6 +3,8 @@
 #PBS -N app-apply-transform
 #PBS -V
 
+set -e
+
 # === Load fields from config.json ===
 warp=$(jq -r .warp config.json)
 inverse_warp=$(jq -r .inverse-warp config.json)
@@ -55,8 +57,7 @@ fi
 
 if [[ "$fsl_transform" == "true" ]]; then
     echo "Converting FLIRT affine to ITK..."
-    singularity exec -e docker://brainlife/connectome_workbench:1.5.0 \
-        singularity exec -e docker://brainlife/vnmd/itksnap_4.0.2:20240206 c3d_affine_tool -ref $reference -src $source $affine -fsl2ras -oitk affine_ants_c3d.txt
+    singularity exec -e docker://brainlife/vnmd/itksnap_4.0.2:20240206 c3d_affine_tool -ref $reference -src $source $affine -fsl2ras -oitk affine_ants_c3d.txt
     affine="affine_ants_c3d.txt"
 
     if [[ "$affine_only" != "true" ]]; then
