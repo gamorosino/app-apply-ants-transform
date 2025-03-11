@@ -54,6 +54,29 @@ Example:
 
 ## Usage
 
+### Running on Brainlife.io
+
+You can run the `app-apply-ants-transform` app on the Brainlife.io platform via the web user interface (UI) or using the Brainlife CLI. Both methods allow for fully automated execution and data management within the Brainlife ecosystem.
+
+#### On Brainlife.io via UI
+
+1. Navigate to the Brainlife.io platform and locate the `app-apply-ants-transform` app.
+2. Click the "Execute" tab and provide the required dataset inputs via the graphical interface.
+
+#### On Brainlife.io using CLI
+
+1. Install the Brainlife CLI by following the instructions at [Brainlife CLI Installation](https://brainlife.io/docs/cli/install/).
+2. Log in to the CLI:
+   ```bash
+   bl login
+   ```
+3. Run the app:
+   ```bash
+   bl app run --id <app_id> --project <project_id> --input warp:<warp_object_id> affine:<affine_object_id> t1:<t1_object_id> ...
+   ```
+   Output will be saved in your specified project.
+
+
 ### Local Execution
 
 1. Clone the repository:
