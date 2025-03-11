@@ -5,6 +5,7 @@
 
 # === Load fields from config.json ===
 warp=$(jq -r .warp config.json)
+inverse_warp=$(jq -r .inverse-warp config.json)
 affine=$(jq -r .affine config.json)
 input=$(jq -r .input config.json)
 interpolation=$(jq -r .interpolation config.json)
@@ -54,8 +55,8 @@ if [[ "$fsl_transform" == "true" ]]; then
 fi
 
 # === Validate required transforms ===
-if [[ "$affine_only" != "true" && ( "$warp" == "null" || "$warp" == "" ) ]]; then
-    echo "Error: No warp provided, and affine_only is false." >&2
+if [[ "$affine_only" != "true" && "$warp" == "null" && "$inverse_warp" == "null" ]]; then
+    echo "Error: No warp or inverse warp provided, and affine_only is false." >&2
     exit 1
 fi
 
@@ -76,7 +77,16 @@ else
             transforms="$transforms -t [$affine,0]"
         fi
     fi
-    transforms="$transforms -t $warp"
+    if [[ "$inverse" == "true" ]]; then
+        if [[ "$inverse_warp" != "null" && "$inverse_warp" != "" ]]; then
+            transforms="$transforms -t $inverse_warp"
+        else
+            echo "Error: inverse is true but inverse-warp is missing in config.json." >&2
+            exit 1
+        fi
+    else
+        transforms="$transforms -t $warp"
+    fi
 fi
 
 # === Create output directory ===
