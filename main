@@ -41,11 +41,23 @@ fi
 [ "$interpolation" == "null" ] && interpolation="Linear"
 
 # === Convert FSL transforms to ANTs if requested ===
+
+if [[ "$inverse" == "true" ]]; then
+
+	reference=$input
+	source=$anat
+else
+	reference=$anat
+	source=$input	
+
+fi
+
+
 if [[ "$fsl_transform" == "true" ]]; then
     echo "Converting FLIRT affine to ITK..."
     singularity exec -e docker://brainlife/connectome_workbench:1.5.0 \
-        wb_command -convert-affine -from-flirt "$affine" "$input" "$anat" -to-itk affine_ants_wb.txt
-    affine="affine_ants_wb.txt"
+        singularity exec -e docker://brainlife/vnmd/itksnap_4.0.2:20240206 c3d_affine_tool -ref $reference -src $source $affine -fsl2ras -oitk affine_ants_c3d.txt
+    affine="affine_ants_c3d.txt"
 
     if [[ "$affine_only" != "true" ]]; then
         # Determine which warp to convert based on inverse flag
@@ -60,7 +72,7 @@ if [[ "$fsl_transform" == "true" ]]; then
         if [[ "$warp_to_convert" != "null" && "$warp_to_convert" != "" ]]; then
             echo "Converting FNIRT warpfield to ITK..."
             singularity exec -e docker://brainlife/connectome_workbench:1.5.0 \
-                wb_command -convert-warpfield -from-fnirt "$warp_to_convert" "$anat" -to-itk "$warp_out"
+                wb_command -convert-warpfield -from-fnirt "$warp_to_convert" "$reference" -to-itk "$warp_out"
             
             # Update correct warp reference after conversion
             if [[ "$inverse" == "true" ]]; then
