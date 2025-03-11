@@ -3,7 +3,7 @@
 #PBS -N app-apply-transform
 #PBS -V
 
-set -e
+#set -e
 
 # === Load fields from config.json ===
 warp=$(jq -r .warp config.json)
