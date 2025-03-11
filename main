@@ -20,7 +20,6 @@ parc=$(jq -r .parc config.json)
 mask=$(jq -r .mask config.json)
 dwi=$(jq -r .dwi config.json)
 
-trks=./trks
 
 # === Assign first available anatomical reference ===
 if [ -n "$t1w" ] && [ "$t1w" != "null" ]; then
@@ -44,50 +43,61 @@ fi
 # === Convert FSL transforms to ANTs if requested ===
 if [[ "$fsl_transform" == "true" ]]; then
     echo "Converting FLIRT affine to ITK..."
-    singularity exec -e docker://brainlife/connectome_workbench:1.5.0 wb_command -convert-affine -from-flirt $affine $input $anat -to-itk affine_ants_wb.txt
+    singularity exec -e docker://brainlife/connectome_workbench:1.5.0 \
+        wb_command -convert-affine -from-flirt "$affine" "$input" "$anat" -to-itk affine_ants_wb.txt
     affine="affine_ants_wb.txt"
 
-    if [[ "$warp" != "null" && "$warp" != "" ]]; then
-        echo "Converting FNIRT warpfield to ITK..."
-        singularity exec -e docker://brainlife/connectome_workbench:1.5.0 wb_command -convert-warpfield -from-fnirt $warp $anat -to-itk warp_ants_wb.nii.gz
-        warp="warp_ants_wb.nii.gz"
-    fi
-fi
+    if [[ "$affine_only" != "true" ]]; then
+        # Determine which warp to convert based on inverse flag
+        warp_to_convert="$warp"
+        warp_out="warp_ants_wb.nii.gz"
 
-# === Validate required transforms ===
-if [[ "$affine_only" != "true" && "$warp" == "null" && "$inverse_warp" == "null" ]]; then
-    echo "Error: No warp or inverse warp provided, and affine_only is false." >&2
-    exit 1
-fi
-
-# === Build transformation chain based on logic ===
-transforms=""
-if [[ "$affine_only" == "true" ]]; then
-    if [[ "$affine" != "null" && "$affine" != "" ]]; then
-        transforms="-t $affine"
-    else
-        echo "Error: affine_only is true but affine transform not provided." >&2
-        exit 1
-    fi
-else
-    if [[ "$affine" != "null" && "$affine" != "" ]]; then
         if [[ "$inverse" == "true" ]]; then
-            transforms="$transforms -t [$affine,1]"
-        else
-            transforms="$transforms -t [$affine,0]"
+            warp_to_convert="$inverse_warp"
+            warp_out="inverse_warp_ants_wb.nii.gz"
         fi
-    fi
-    if [[ "$inverse" == "true" ]]; then
-        if [[ "$inverse_warp" != "null" && "$inverse_warp" != "" ]]; then
-            transforms="$transforms -t $inverse_warp"
+
+        if [[ "$warp_to_convert" != "null" && "$warp_to_convert" != "" ]]; then
+            echo "Converting FNIRT warpfield to ITK..."
+            singularity exec -e docker://brainlife/connectome_workbench:1.5.0 \
+                wb_command -convert-warpfield -from-fnirt "$warp_to_convert" "$anat" -to-itk "$warp_out"
+            
+            # Update correct warp reference after conversion
+            if [[ "$inverse" == "true" ]]; then
+                inverse_warp="$warp_out"
+            else
+                warp="$warp_out"
+            fi
         else
-            echo "Error: inverse is true but inverse-warp is missing in config.json." >&2
+            echo "Error: Missing warpfield required for conversion (inverse=$inverse)." >&2
             exit 1
         fi
-    else
-        transforms="$transforms -t $warp"
     fi
 fi
+
+# === Build transformation chain ===
+transforms=""
+
+# Append affine (always considered, even when affine_only is true)
+if [[ "$affine" != "null" && "$affine" != "" ]]; then
+    inverse_flag="0"
+    [[ "$inverse" == "true" ]] && inverse_flag="1"
+    transforms="$transforms -t [$affine,$inverse_flag]"
+fi
+
+# Append warp (only if affine_only is false)
+if [[ "$affine_only" != "true" ]]; then
+    selected_warp="$warp"
+    [[ "$inverse" == "true" ]] && selected_warp="$inverse_warp"
+
+    if [[ "$selected_warp" != "null" && "$selected_warp" != "" ]]; then
+        transforms="$transforms -t $selected_warp"
+    else
+        echo "Error: affine_only is false but appropriate warp is missing (inverse=$inverse)." >&2
+        exit 1
+    fi
+fi
+
 
 # === Create output directory ===
 outdir=./ants_transformed
