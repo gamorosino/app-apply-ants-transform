@@ -9,7 +9,7 @@ set -e
 warp=$(jq -r .warp config.json)
 inverse_warp=$(jq -r '."inverse-warp"' config.json)
 affine=$(jq -r .affine config.json)
-input_t1w=$(jq -r .input_t1w config.json)
+input_t1w=$(jq -r .input_t1 config.json)
 input_tractmasks=$(jq -r .input_tractmasks config.json)
 interpolation=$(jq -r .interpolation config.json)
 inverse=$(jq -r .inverse config.json)
