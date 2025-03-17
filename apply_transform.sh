@@ -77,7 +77,7 @@ fi
 # === Output setup ===
 outdir=./ants_transformed
 mkdir -p "$outdir"
-output_image=${outdir}/t1.nii.gz
+output_image=${outdir}/$( basename $input )
 
 # === Apply transforms ===
 echo "Applying transforms to $input using reference $anat..."
