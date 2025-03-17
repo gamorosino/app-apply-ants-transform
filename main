@@ -35,7 +35,7 @@ if [ -n "$input_t1w" ] && [ "$input_t1w" != "null" ]; then
 #elif [ -n "$dwi" ] && [ "$dwi" != "null" ]; then
 #    anat=$dwi
 else
-    echo "Error: No valid anatomical reference found in config.json" >&2
+    echo "Error: No valid input found in config.json" >&2
     exit 1
 fi
 
