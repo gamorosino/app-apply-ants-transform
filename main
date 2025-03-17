@@ -57,7 +57,7 @@ else
         echo "Applying transform to input_t1: $input"
         ./apply_transform.sh "$input" "$anat" "$warp" "$inverse_warp" "$affine" "$interpolation" "$inverse" "$affine_only" "$fsl_transform"
     else
-        echo "Error: Neither tract masks folder nor input_t1w is defined in config.json" >&2
+        echo "Error: No input files is defined in config.json" >&2
         exit 1
     fi
 fi
