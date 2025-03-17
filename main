@@ -23,14 +23,6 @@ parc=$(jq -r .parc config.json)
 mask=$(jq -r .mask config.json)
 dwi=$(jq -r .dwi config.json)
 
-# === Assign input image ===
-if [ -n "$input_t1w" ] && [ "$input_t1w" != "null" ]; then
-    input=$input_t1w
-else
-    echo "Error: No valid input found in config.json" >&2
-    exit 1
-fi
-
 # === Assign first available anatomical reference ===
 if [ -n "$t1w" ] && [ "$t1w" != "null" ]; then
     anat=$t1w
@@ -49,5 +41,23 @@ fi
 
 [ "$interpolation" == "null" ] && interpolation="Linear"
 
-# === Call separate script ===
-bash ./apply_transform.sh "$input" "$anat" "$warp" "$inverse_warp" "$affine" "$interpolation" "$inverse" "$affine_only" "$fsl_transform"
+# === Check if input_tractmasks folder exists and is not null ===
+if [ -n "$input_tractmasks" ] && [ "$input_tractmasks" != "null" ] && [ -d "$input_tractmasks" ]; then
+    echo "Detected folder of tract masks: $input_tractmasks"
+    for mask_file in "$input_tractmasks"/*; do
+        if [ -f "$mask_file" ]; then
+            echo "Applying transform to tract mask: $mask_file"
+            ./apply_transform.sh "$mask_file" "$anat" "$warp" "$inverse_warp" "$affine" "$interpolation" "$inverse" "$affine_only" "$fsl_transform"
+        fi
+    done
+else
+    # === Fallback: use input_t1w as input ===
+    if [ -n "$input_t1w" ] && [ "$input_t1w" != "null" ]; then
+        input=$input_t1w
+        echo "Applying transform to input_t1: $input"
+        ./apply_transform.sh "$input" "$anat" "$warp" "$inverse_warp" "$affine" "$interpolation" "$inverse" "$affine_only" "$fsl_transform"
+    else
+        echo "Error: Neither tract masks folder nor input_t1w is defined in config.json" >&2
+        exit 1
+    fi
+fi
