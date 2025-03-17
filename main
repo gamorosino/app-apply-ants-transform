@@ -47,7 +47,7 @@ if [ -n "$input_tractmasks" ] && [ "$input_tractmasks" != "null" ] && [ -d "$inp
     for mask_file in "$input_tractmasks"/*; do
         if [ -f "$mask_file" ]; then
             echo "Applying transform to tract mask: $mask_file"
-            ./apply_transform.sh "$mask_file" "$anat" "$warp" "$inverse_warp" "$affine" "$interpolation" "$inverse" "$affine_only" "$fsl_transform"
+            bash ./apply_transform.sh "$mask_file" "$anat" "$warp" "$inverse_warp" "$affine" "$interpolation" "$inverse" "$affine_only" "$fsl_transform"
         fi
     done
 else
@@ -55,7 +55,7 @@ else
     if [ -n "$input_t1w" ] && [ "$input_t1w" != "null" ]; then
         input=$input_t1w
         echo "Applying transform to input_t1: $input"
-        ./apply_transform.sh "$input" "$anat" "$warp" "$inverse_warp" "$affine" "$interpolation" "$inverse" "$affine_only" "$fsl_transform"
+        bash ./apply_transform.sh "$input" "$anat" "$warp" "$inverse_warp" "$affine" "$interpolation" "$inverse" "$affine_only" "$fsl_transform"
     else
         echo "Error: No input file is defined in config.json" >&2
         exit 1
