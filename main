@@ -22,6 +22,7 @@ t2w=$(jq -r .t2 config.json)
 parc=$(jq -r .parc config.json)
 mask=$(jq -r .mask config.json)
 dwi=$(jq -r .dwi config.json)
+fa=$(jq -r .fa config.json)
 
 # === Assign first available anatomical reference ===
 if [ -n "$t1w" ] && [ "$t1w" != "null" ]; then
@@ -34,6 +35,8 @@ elif [ -n "$mask" ] && [ "$mask" != "null" ]; then
     anat=$mask
 elif [ -n "$dwi" ] && [ "$dwi" != "null" ]; then
     anat=$dwi
+elif [ -n "$fa" ] && [ "$fa" != "null" ]; then
+    anat=$fa
 else
     echo "Error: No valid anatomical reference found in config.json" >&2
     exit 1
