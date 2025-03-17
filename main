@@ -50,4 +50,4 @@ fi
 [ "$interpolation" == "null" ] && interpolation="Linear"
 
 # === Call separate script ===
-./apply_transform.sh "$input" "$anat" "$warp" "$inverse_warp" "$affine" "$interpolation" "$inverse" "$affine_only" "$fsl_transform"
+bash ./apply_transform.sh "$input" "$anat" "$warp" "$inverse_warp" "$affine" "$interpolation" "$inverse" "$affine_only" "$fsl_transform"
