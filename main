@@ -23,17 +23,9 @@ parc=$(jq -r .parc config.json)
 mask=$(jq -r .mask config.json)
 dwi=$(jq -r .dwi config.json)
 
-# === Assign first input  ===
+# === Assign input image ===
 if [ -n "$input_t1w" ] && [ "$input_t1w" != "null" ]; then
     input=$input_t1w
-#elif [ -n "$t2w" ] && [ "$t2w" != "null" ]; then
-#    anat=$t2w
-#elif [ -n "$parc" ] && [ "$parc" != "null" ]; then
-#    anat=$parc
-#elif [ -n "$mask" ] && [ "$mask" != "null" ]; then
-#    anat=$mask
-#elif [ -n "$dwi" ] && [ "$dwi" != "null" ]; then
-#    anat=$dwi
 else
     echo "Error: No valid input found in config.json" >&2
     exit 1
@@ -55,95 +47,7 @@ else
     exit 1
 fi
 
-# Set default interpolation
 [ "$interpolation" == "null" ] && interpolation="Linear"
 
-# === Convert FSL transforms to ANTs if requested ===
-
-if [[ "$inverse" == "true" ]]; then
-
-	reference=$input
-	source=$anat
-else
-	reference=$anat
-	source=$input	
-
-fi
-
-
-if [[ "$fsl_transform" == "true" ]]; then
-    echo "Converting FLIRT affine to ITK..."
-    singularity exec -e docker://vnmd/itksnap_4.0.2:20240206 \
-	c3d_affine_tool -ref $reference -src $source $affine -fsl2ras -oitk affine_ants_c3d.txt
-    affine="affine_ants_c3d.txt"
-
-    if [[ "$affine_only" != "true" ]]; then
-        # Determine which warp to convert based on inverse flag
-        warp_to_convert="$warp"
-        warp_out="warp_ants_wb.nii.gz"
-
-        if [[ "$inverse" == "true" ]]; then
-            warp_to_convert="$inverse_warp"
-            warp_out="inverse_warp_ants_wb.nii.gz"
-        fi
-
-        if [[ "$warp_to_convert" != "null" && "$warp_to_convert" != "" ]]; then
-            echo "Converting FNIRT warpfield to ITK..."
-            singularity exec -e docker://brainlife/connectome_workbench:1.5.0 \
-                wb_command -convert-warpfield -from-fnirt "$warp_to_convert" "$reference" -to-itk "$warp_out"
-            
-            # Update correct warp reference after conversion
-            if [[ "$inverse" == "true" ]]; then
-                inverse_warp="$warp_out"
-            else
-                warp="$warp_out"
-            fi
-        else
-            echo "Error: Missing warpfield required for conversion (inverse=$inverse)." >&2
-            exit 1
-        fi
-    fi
-fi
-
-# === Build transformation chain ===
-transforms=""
-
-# Append affine (always considered, even when affine_only is true)
-if [[ "$affine" != "null" && "$affine" != "" ]]; then
-    inverse_flag="0"
-    [[ "$inverse" == "true" ]] && inverse_flag="1"
-    transforms="$transforms -t [$affine,$inverse_flag]"
-fi
-
-# Append warp (only if affine_only is false)
-if [[ "$affine_only" != "true" ]]; then
-    selected_warp="$warp"
-    [[ "$inverse" == "true" ]] && selected_warp="$inverse_warp"
-
-    if [[ "$selected_warp" != "null" && "$selected_warp" != "" ]]; then
-        transforms="$transforms -t $selected_warp"
-    else
-        echo "Error: affine_only is false but appropriate warp is missing (inverse=$inverse)." >&2
-        exit 1
-    fi
-fi
-
-
-# === Create output directory ===
-outdir=./ants_transformed
-mkdir -p "$outdir"
-
-# === Define output file name ===
-output_image=${outdir}/t1.nii.gz
-
-# === Run antsApplyTransforms ===
-echo "Applying transforms to $input using reference $anat..."
-singularity exec -e docker://brainlife/ants:2.2.0-1bc antsApplyTransforms \
-    -d 3 \
-    -i "$input" \
-    -r "$anat" \
-    $transforms \
-    -o "$output_image" \
-    -n "$interpolation"
-
-echo "Transformation complete. Output written to $output_image"
+# === Call separate script ===
+./apply_transform.sh "$input" "$anat" "$warp" "$inverse_warp" "$affine" "$interpolation" "$inverse" "$affine_only" "$fsl_transform"
