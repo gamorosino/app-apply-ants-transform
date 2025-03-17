@@ -9,7 +9,8 @@ set -e
 warp=$(jq -r .warp config.json)
 inverse_warp=$(jq -r '."inverse-warp"' config.json)
 affine=$(jq -r .affine config.json)
-input=$(jq -r .input config.json)
+input_t1w=$(jq -r .input_t1w config.json)
+input_tractmasks=$(jq -r .input_tractmasks config.json)
 interpolation=$(jq -r .interpolation config.json)
 inverse=$(jq -r .inverse config.json)
 affine_only=$(jq -r .affine_only config.json)
@@ -22,6 +23,21 @@ parc=$(jq -r .parc config.json)
 mask=$(jq -r .mask config.json)
 dwi=$(jq -r .dwi config.json)
 
+# === Assign first input  ===
+if [ -n "$input_t1w" ] && [ "$input_t1w" != "null" ]; then
+    input=$input_t1w
+#elif [ -n "$t2w" ] && [ "$t2w" != "null" ]; then
+#    anat=$t2w
+#elif [ -n "$parc" ] && [ "$parc" != "null" ]; then
+#    anat=$parc
+#elif [ -n "$mask" ] && [ "$mask" != "null" ]; then
+#    anat=$mask
+#elif [ -n "$dwi" ] && [ "$dwi" != "null" ]; then
+#    anat=$dwi
+else
+    echo "Error: No valid anatomical reference found in config.json" >&2
+    exit 1
+fi
 
 # === Assign first available anatomical reference ===
 if [ -n "$t1w" ] && [ "$t1w" != "null" ]; then
