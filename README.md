@@ -25,7 +25,7 @@ Example:
     "warp": "transforms/warp.nii.gz",
     "inverse-warp": "transforms/inverse_warp.nii.gz",
     "affine": "transforms/affine.txt",
-    "input_t1w": "native/input_image.nii.gz",
+    "input_t1": "native/input_image.nii.gz",
     "interpolation": "Linear",
     "inverse": false,
     "affine_only": false,
