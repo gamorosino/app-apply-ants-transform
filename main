@@ -44,12 +44,11 @@ fi
 # === Check if input_tractmasks folder exists and is not null ===
 if [ -n "$input_tractmasks" ] && [ "$input_tractmasks" != "null" ] && [ -d "$input_tractmasks" ]; then
     echo "Detected folder of tract masks: $input_tractmasks"
-    for mask_file in "$input_tractmasks"/*; do
-        if [ -f "$mask_file" ]; then
-            echo "Applying transform to tract mask: $mask_file"
-            bash ./apply_transform.sh "$mask_file" "$anat" "$warp" "$inverse_warp" "$affine" "$interpolation" "$inverse" "$affine_only" "$fsl_transform"
-        fi
+    find "$input_tractmasks" -type f \( -iname "*.nii" -o -iname "*.nii.gz" \) | while read -r mask_file; do
+        echo "Applying transform to tract mask: $mask_file"
+        ./apply_transform.sh "$mask_file" "$anat" "$warp" "$inverse_warp" "$affine" "$interpolation" "$inverse" "$affine_only" "$fsl_transform"
     done
+
 else
     # === Fallback: use input_t1w as input ===
     if [ -n "$input_t1w" ] && [ "$input_t1w" != "null" ]; then
