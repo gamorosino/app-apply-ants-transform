@@ -89,7 +89,7 @@ cd app-apply-ants-transform
 
 3. Run the script:
 ```bash
-./apply_transform_main_final.sh
+./main
 ```
 
 The script will:
@@ -103,7 +103,7 @@ The script will:
 
 ## Output
 
-- **Transformed Image:** `ants_transformed/t1.nii.gz`
+- **Transformed Image:** `transformed/t1.nii.gz`
 
 ## Citation
 
