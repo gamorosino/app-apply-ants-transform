@@ -75,7 +75,7 @@ if [[ "$affine_only" != "true" ]]; then
 fi
 
 # === Output setup ===
-outdir=./ants_transformed
+outdir=./transformed
 mkdir -p "$outdir"
 output_image=${outdir}/$( basename $input )
 
