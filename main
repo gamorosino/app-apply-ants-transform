@@ -12,6 +12,20 @@ affine=$(jq -r .affine config.json)
 input_t1w=$(jq -r .input_t1 config.json)
 input_tractmasks=$(jq -r .input_tractmasks config.json)
 input_mask=$(jq -r .input_mask config.json)
+
+# Diffusion metric maps to reslice (tensor: fa/md/rd/ad; NODDI: ndi/isovf/odi).
+# Named "moving_*" to avoid colliding with the "fa"/"md"/... keys below, which
+# feed the *fixed_tensor* (reference) input, not the thing being transformed.
+# NODDI's "dir" (a 3-vector orientation field) is intentionally not included:
+# reslicing its 3 components independently would rotate the directions
+# incorrectly under anything beyond a pure translation.
+moving_fa=$(jq -r '.moving_fa // empty' config.json)
+moving_md=$(jq -r '.moving_md // empty' config.json)
+moving_rd=$(jq -r '.moving_rd // empty' config.json)
+moving_ad=$(jq -r '.moving_ad // empty' config.json)
+moving_ndi=$(jq -r '.moving_ndi // empty' config.json)
+moving_isovf=$(jq -r '.moving_isovf // empty' config.json)
+moving_odi=$(jq -r '.moving_odi // empty' config.json)
 interpolation=$(jq -r .interpolation config.json)
 inverse=$(jq -r .inverse config.json)
 affine_only=$(jq -r .affine_only config.json)
@@ -48,8 +62,25 @@ fi
 
 [ "$interpolation" == "null" ] && interpolation="Linear"
 
+# === Check for diffusion metric moving maps first (most specific case) ===
+have_diffmetric=false
+for v in "$moving_fa" "$moving_md" "$moving_rd" "$moving_ad" "$moving_ndi" "$moving_isovf" "$moving_odi"; do
+    if [ -n "$v" ] && [ "$v" != "null" ]; then
+        have_diffmetric=true
+        break
+    fi
+done
+
+if [ "$have_diffmetric" = true ]; then
+    mkdir -p ./transformed
+    for v in "$moving_fa" "$moving_md" "$moving_rd" "$moving_ad" "$moving_ndi" "$moving_isovf" "$moving_odi"; do
+        if [ -n "$v" ] && [ "$v" != "null" ] && [ -f "$v" ]; then
+            echo "Applying transform to diffusion metric map: $v"
+            bash ./apply_transform.sh "$v" "$anat" "$warp" "$inverse_warp" "$affine" "$interpolation" "$inverse" "$affine_only" "$fsl_transform"
+        fi
+    done
 # === Check if input_tractmasks folder exists and is not null ===
-if [ -n "$input_tractmasks" ] && [ "$input_tractmasks" != "null" ] && [ -d "$input_tractmasks" ]; then
+elif [ -n "$input_tractmasks" ] && [ "$input_tractmasks" != "null" ] && [ -d "$input_tractmasks" ]; then
     echo "Detected folder of tract masks: $input_tractmasks"
     find "$input_tractmasks" -type f \( -iname "*.nii" -o -iname "*.nii.gz" \) | while read -r mask_file; do
         echo "Applying transform to tract mask: $mask_file"
