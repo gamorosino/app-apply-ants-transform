@@ -1,5 +1,52 @@
 # app-apply-ants-transform
 
+<!-- brainlife-app:begin (generated from the App manifest; edit the manifest, not this block) -->
+
+> **Applies an existing ANTs or FSL transform (affine plus optional nonlinear warp) to a T1-weighted image with ANTs antsApplyTransforms, resampling it onto a chosen reference image.**
+
+Wraps antsApplyTransforms to move a T1w image into another space using a precomputed transform (warp, inverse warp and affine). The reference grid is the first optional fixed input provided, in the order T1w, T2w, parcellation, mask, DWI, b0; at least one must be given. FLIRT/FNIRT transforms can be converted to ITK format first (fsl_transform), and the inverse or affine-only chain can be applied. It does not estimate a registration; use a registration App to compute the transform first.
+
+| | |
+|---|---|
+| 📥 **Inputs** | `neuro/transform/nifti` · `neuro/anat/t1w` · `neuro/anat/t1w` (optional) · `neuro/anat/t2w` (optional) · `neuro/parcellation/volume` (optional) · `neuro/mask` (optional) · `neuro/dwi` (optional) · `neuro/dwi/b0` (optional) |
+| 📤 **Outputs** | `neuro/anat/t1w` |
+| 🐳 **Container** | `brainlife/ants:2.2.0-1bc` |
+| ⚙️ **Resources** | 1 CPUs · 0.17 h walltime |
+| 🔗 **Run it** | [doi.org/10.25663/brainlife.app.848](https://doi.org/10.25663/brainlife.app.848) |
+
+#### 📥 Inputs
+
+| Input | Datatype | Required | Description |
+|---|---|---|---|
+| `transform` | `neuro/transform/nifti` | yes | Precomputed transform: nonlinear warp, inverse warp and affine matrix (ANTs format, or FSL FLIRT/FNIRT when fsl_transform is set). The warp matching the chosen direction must be present unless affine_only is set. |
+| `moving_T1w` | `neuro/anat/t1w` | yes | T1-weighted image to be transformed. |
+| `fixed_T1` | `neuro/anat/t1w` | no | Optional T1w image used as the reference grid (first choice). |
+| `fixed_t2` | `neuro/anat/t2w` | no | Optional T2w image used as the reference grid if no T1w reference is given. |
+| `fixed_parc` | `neuro/parcellation/volume` | no | Optional parcellation used as the reference grid if no T1w/T2w reference is given. |
+| `fixed_mask` | `neuro/mask` | no | Optional mask used as the reference grid if no earlier reference is given. |
+| `fixed_dwi` | `neuro/dwi` | no | Optional DWI used as the reference grid if no earlier reference is given. |
+| `fixed_b0` | `neuro/dwi/b0` | no | Optional b0 image used as the reference grid if no other reference is given. |
+
+#### 📤 Outputs
+
+| Output | Datatype | Description |
+|---|---|---|
+| `transformed` | `neuro/anat/t1w` | The T1w image resampled into the reference space (NIfTI, same file name as the input). |
+
+<details>
+<summary><b>⚙️ Parameters</b> (4)</summary>
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `inverse` | boolean | `false` | Apply inverse transformations |
+| `affine_only` | boolean | `false` | Apply only affine transformation |
+| `interpolation` | string | `Linear` | Interpolation method (Linear, NearestNeighbor, etc.) |
+| `fsl_transform` | boolean | `false` | If true, converts affine and warp to from FSL to ANTs-compatible format |
+
+</details>
+
+<!-- brainlife-app:end -->
+
 This repository contains a script designed to apply spatial transformations to neuroimaging data using [ANTs (Advanced Normalization Tools)](http://stnava.github.io/ANTs/). The pipeline automatically manages transformation chains, including support for FSL-derived transforms, inverse applications, and multiple reference spaces.
 
 ## Features
